@@ -111,6 +111,7 @@ int open_video_codec(AVFormatContext *context, int keyframe,
             }
             c = avcodec_find_decoder(s->codecpar->codec_id);
             if (c == NULL) return AVERROR_DECODER_NOT_FOUND;
+            printf("Stream: start_time %lld, time_base %d/%d\n", s->start_time, s->time_base.num, s->time_base.den);
             break;
         }
     }
