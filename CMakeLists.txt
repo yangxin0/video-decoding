@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10.0)
-project(VideoDecoder)
+project(video-frame-extractor)
 
 aux_source_directory(${PROJECT_SOURCE_DIR}/src SRC)
 find_package(PkgConfig REQUIRED)

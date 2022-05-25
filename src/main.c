@@ -12,6 +12,8 @@ int decode_packet(AVCodecContext *codec_ctx, AVPacket *packet, AVFrame *frame);
 int open_video_codec(AVFormatContext *context, int keyframe,
                      AVCodecContext **codec_context, int *stream_index);
 int open_video_file(const char *video_path, AVFormatContext **context);
+int encode_jpeg(AVFrame *frame, const char *path);
+int save_packet(AVPacket *packet, const char *path);
 
 
 void decode_video_file(const char *video_path, int keyframe) 
@@ -66,6 +68,7 @@ failed:
 
 int decode_packet(AVCodecContext *codec_ctx, AVPacket *packet, AVFrame *frame)
 {
+    char path[128];
     int rc;
     // 把压缩的帧送入解码器
     if ((rc = avcodec_send_packet(codec_ctx, packet)) < 0) return rc;
@@ -79,6 +82,10 @@ int decode_packet(AVCodecContext *codec_ctx, AVPacket *packet, AVFrame *frame)
         }
         total_frame++;
         if (frame->key_frame) total_key++;
+        sprintf(path, "extracted/frame_%d_%lld.jpg", total_frame, frame->pts);
+        if ((rc =encode_jpeg(frame, path)) < 0) {
+            printf("Encode frame failed, seq %d, %lld pts\n", total_frame, frame->pts);
+        }
         printf("Frame: key %d, pts %lld, dts %lld\n", frame->key_frame, frame->pkt_dts, frame->pts);
         // unref frame directly
         av_frame_unref(frame);
@@ -92,7 +99,7 @@ int open_video_codec(AVFormatContext *context, int keyframe,
 {
     int i, rc;
     AVStream *s;
-    AVCodec *c = NULL;
+    const AVCodec *c = NULL;
     AVDictionary *opts = NULL;
     for (i = 0; i < context->nb_streams; i++) {
         s = context->streams[i];
@@ -148,13 +155,81 @@ failed:
 }
 
 
+int encode_jpeg(AVFrame *frame, const char *path) 
+{
+    const AVCodec *jpeg_encoder = NULL;
+    AVCodecContext *jpeg_ctx = NULL;
+    AVPacket packet;
+    int rc = 0;
+
+    jpeg_encoder = avcodec_find_encoder(AV_CODEC_ID_MJPEG);
+    if (!jpeg_encoder) {
+        return AVERROR_ENCODER_NOT_FOUND;
+    }
+
+    jpeg_ctx = avcodec_alloc_context3(jpeg_encoder);
+    if (!jpeg_ctx) {
+        return AVERROR_ENCODER_NOT_FOUND;
+    }
+    
+    jpeg_ctx->pix_fmt = AV_PIX_FMT_YUVJ420P;
+    // yuv420p is not supported on mac
+    // jpeg_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
+    jpeg_ctx->height = frame->height;
+    jpeg_ctx->width = frame->width;
+    jpeg_ctx->time_base.num = 1;
+    jpeg_ctx->time_base.den = 25;
+
+    if ((rc = av_new_packet(&packet, 0)) < 0) {
+        avcodec_free_context(&jpeg_ctx);
+        return rc;
+    }
+
+    if ((rc = avcodec_open2(jpeg_ctx, jpeg_encoder, NULL)) < 0) {
+        goto out;
+    }
+
+    if ((rc = avcodec_send_frame(jpeg_ctx, frame)) < 0) {
+        goto out;
+    }
+    
+    if ((rc = avcodec_receive_packet(jpeg_ctx, &packet)) < 0) {
+        goto out;
+    }
+
+    if ((rc = save_packet(&packet, path)) < 0) {
+        goto out;
+    }
+
+out:
+    if (jpeg_ctx) avcodec_free_context(&jpeg_ctx);
+    av_packet_unref(&packet);
+    return rc;
+}
+
+
+int save_packet(AVPacket *packet, const char *path) 
+{
+    FILE *fout = fopen(path, "wb");
+    if (!fout) {
+        fprintf(stderr, "open %s failed\n", path);
+        return AVERROR(errno);
+    }
+
+    fwrite(packet->data, 1, packet->size, fout);
+    fclose(fout);
+
+    return 0;
+}
+
+
 int main(int argc, char *argv[])
 {
     int keyframe = 0;
     const char *video_path = "";
     // 提供一个keyframe选项，该选项表示只解码关键帧
     if (argc < 2) {
-        fprintf(stderr, "video_decode_demo video_path [keyframe]\n");
+        fprintf(stderr, "video-frame-extractor video_path [keyframe]\n");
         exit(-1);
     }
     video_path = argv[1];
