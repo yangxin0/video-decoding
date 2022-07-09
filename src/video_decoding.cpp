@@ -1,20 +1,9 @@
-#include <stdio.h>
-#include <libavformat/avformat.h>
-#include <libavcodec/avcodec.h>
+#include <cstdio>
+#include "video_decoding.h"
 
-#define MAX_ERROR 128
 
-int total_frame = 0;
-int total_key = 0;
-
-void decode_video_file(const char *video_path, int keyframe);
-int decode_packet(AVCodecContext *codec_ctx, AVPacket *packet, AVFrame *frame);
-int open_video_codec(AVFormatContext *context, int keyframe,
-                     AVCodecContext **codec_context, int *stream_index);
-int open_video_file(const char *video_path, AVFormatContext **context);
-int encode_jpeg(AVFrame *frame, const char *path);
-int save_packet(AVPacket *packet, const char *path);
-
+static int total_frame = 0;
+static int total_key = 0;
 
 void decode_video_file(const char *video_path, int keyframe) 
 {
