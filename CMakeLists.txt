@@ -6,7 +6,6 @@ find_package(PkgConfig REQUIRED)
 pkg_search_module(AVFORMAT REQUIRED libavformat)
 pkg_search_module(AVCODEC REQUIRED libavcodec)
 
-include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${AVFORMAT_INCLUDE_DIRS})
 include_directories(${AVCODEC_INCLUDE_DIRS})
 

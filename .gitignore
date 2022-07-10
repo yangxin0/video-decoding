@@ -55,3 +55,7 @@ dkms.conf
 *.swp
 /.cache/
 /.vscode/
+/bazel-bin
+/bazel-out
+/bazel-testlogs
+/bazel-video-decoding
