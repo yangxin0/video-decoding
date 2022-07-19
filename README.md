@@ -1,4 +1,4 @@
-# Video Frame Extractor 
+# Video Decoding
 
-This video frame extractor gives you a very simple example on how to implement a video decoder. 
-The main purpose is that it helps me to debug weired decoding problems.
+This repo contains all kinds ffmpeg wrappers and tools help me to explore encoding and
+decoding tech.
