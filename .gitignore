@@ -59,3 +59,4 @@ dkms.conf
 /bazel-out
 /bazel-testlogs
 /bazel-video-decoding
+compile_commands.json
